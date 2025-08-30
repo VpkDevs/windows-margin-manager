@@ -433,66 +433,507 @@ namespace WindowsMarginManager
 
     public class WindowFilter
     {
+        private readonly Dictionary<string, Regex> compiledRegexCache = new Dictionary<string, Regex>();
+        private readonly Dictionary<string, DateTime> lastMatchCache = new Dictionary<string, DateTime>();
+
         public bool MatchesCriteria(WindowInfo window, WindowFilterCriteria criteria)
         {
-            if (!string.IsNullOrEmpty(criteria.TitlePattern))
+            if (criteria == null) return true;
+
+            if (!CheckBasicCriteria(window, criteria)) return false;
+            if (!CheckSizeCriteria(window, criteria)) return false;
+            if (!CheckStateCriteria(window, criteria)) return false;
+            if (!CheckProcessCriteria(window, criteria)) return false;
+            if (!CheckTitleCriteria(window, criteria)) return false;
+            if (!CheckClassNameCriteria(window, criteria)) return false;
+            if (!CheckPositionCriteria(window, criteria)) return false;
+            if (!CheckTimeCriteria(window, criteria)) return false;
+            if (!CheckMonitorCriteria(window, criteria)) return false;
+            if (!CheckCustomCriteria(window, criteria)) return false;
+
+            UpdateMatchCache(window, criteria);
+            return true;
+        }
+
+        private bool CheckBasicCriteria(WindowInfo window, WindowFilterCriteria criteria)
+        {
+            if (!criteria.IncludeMinimized && window.IsMinimized)
+                return false;
+
+            if (criteria.RequireVisibleTitle && string.IsNullOrWhiteSpace(window.Title))
+                return false;
+
+            if (criteria.MaxAge.HasValue)
             {
-                var regex = new Regex(criteria.TitlePattern, RegexOptions.IgnoreCase);
-                if (!regex.IsMatch(window.Title))
+                var windowAge = DateTime.UtcNow - window.LastUpdated;
+                if (windowAge > criteria.MaxAge.Value)
                     return false;
             }
 
-            if (criteria.ProcessNames?.Any() == true)
+            return true;
+        }
+
+        private bool CheckSizeCriteria(WindowInfo window, WindowFilterCriteria criteria)
+        {
+            var rect = window.Rectangle;
+
+            if (criteria.MinWidth.HasValue && rect.Width < criteria.MinWidth.Value) return false;
+            if (criteria.MinHeight.HasValue && rect.Height < criteria.MinHeight.Value) return false;
+            if (criteria.MaxWidth.HasValue && rect.Width > criteria.MaxWidth.Value) return false;
+            if (criteria.MaxHeight.HasValue && rect.Height > criteria.MaxHeight.Value) return false;
+
+            if (criteria.MinArea.HasValue && (rect.Width * rect.Height) < criteria.MinArea.Value) return false;
+            if (criteria.MaxArea.HasValue && (rect.Width * rect.Height) > criteria.MaxArea.Value) return false;
+
+            if (criteria.AspectRatioRange != null)
             {
-                if (!criteria.ProcessNames.Any(p => 
-                    window.ProcessName.Equals(p, StringComparison.OrdinalIgnoreCase)))
+                var aspectRatio = (double)rect.Width / rect.Height;
+                if (aspectRatio < criteria.AspectRatioRange.Min || aspectRatio > criteria.AspectRatioRange.Max)
                     return false;
             }
 
-            if (criteria.MinWidth.HasValue && window.Rectangle.Width < criteria.MinWidth.Value)
-                return false;
-            if (criteria.MinHeight.HasValue && window.Rectangle.Height < criteria.MinHeight.Value)
-                return false;
-            if (criteria.MaxWidth.HasValue && window.Rectangle.Width > criteria.MaxWidth.Value)
-                return false;
-            if (criteria.MaxHeight.HasValue && window.Rectangle.Height > criteria.MaxHeight.Value)
-                return false;
+            return true;
+        }
 
+        private bool CheckStateCriteria(WindowInfo window, WindowFilterCriteria criteria)
+        {
             if (criteria.WindowStates?.Any() == true)
             {
                 if (!criteria.WindowStates.Contains(window.WindowState))
                     return false;
             }
 
-            if (criteria.ExcludedProcesses?.Any() == true)
+            if (criteria.ExcludedStates?.Any() == true)
             {
-                if (criteria.ExcludedProcesses.Any(p => 
-                    window.ProcessName.Equals(p, StringComparison.OrdinalIgnoreCase)))
-                    return false;
-            }
-
-            if (criteria.ExcludedTitles?.Any() == true)
-            {
-                if (criteria.ExcludedTitles.Any(t => 
-                    window.Title.Contains(t, StringComparison.OrdinalIgnoreCase)))
+                if (criteria.ExcludedStates.Contains(window.WindowState))
                     return false;
             }
 
             return true;
+        }
+
+        private bool CheckProcessCriteria(WindowInfo window, WindowFilterCriteria criteria)
+        {
+            if (criteria.ProcessNames?.Any() == true)
+            {
+                var processMatches = criteria.ProcessNames.Any(p => 
+                    MatchesPattern(window.ProcessName, p, criteria.CaseSensitive));
+                if (!processMatches) return false;
+            }
+
+            if (criteria.ExcludedProcesses?.Any() == true)
+            {
+                var processExcluded = criteria.ExcludedProcesses.Any(p => 
+                    MatchesPattern(window.ProcessName, p, criteria.CaseSensitive));
+                if (processExcluded) return false;
+            }
+
+            if (criteria.ProcessIdRange != null)
+            {
+                if (window.ProcessId < criteria.ProcessIdRange.Min || window.ProcessId > criteria.ProcessIdRange.Max)
+                    return false;
+            }
+
+            return true;
+        }
+
+        private bool CheckTitleCriteria(WindowInfo window, WindowFilterCriteria criteria)
+        {
+            if (!string.IsNullOrEmpty(criteria.TitlePattern))
+            {
+                if (!MatchesRegexPattern(window.Title, criteria.TitlePattern, criteria.CaseSensitive))
+                    return false;
+            }
+
+            if (criteria.TitleContains?.Any() == true)
+            {
+                var titleMatches = criteria.TitleContains.Any(t => 
+                    window.Title.Contains(t, criteria.CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase));
+                if (!titleMatches) return false;
+            }
+
+            if (criteria.ExcludedTitles?.Any() == true)
+            {
+                var titleExcluded = criteria.ExcludedTitles.Any(t => 
+                    window.Title.Contains(t, criteria.CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase));
+                if (titleExcluded) return false;
+            }
+
+            if (criteria.TitleStartsWith?.Any() == true)
+            {
+                var startsWithMatch = criteria.TitleStartsWith.Any(t => 
+                    window.Title.StartsWith(t, criteria.CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase));
+                if (!startsWithMatch) return false;
+            }
+
+            if (criteria.TitleEndsWith?.Any() == true)
+            {
+                var endsWithMatch = criteria.TitleEndsWith.Any(t => 
+                    window.Title.EndsWith(t, criteria.CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase));
+                if (!endsWithMatch) return false;
+            }
+
+            return true;
+        }
+
+        private bool CheckClassNameCriteria(WindowInfo window, WindowFilterCriteria criteria)
+        {
+            if (!string.IsNullOrEmpty(criteria.ClassNamePattern))
+            {
+                if (!MatchesRegexPattern(window.ClassName, criteria.ClassNamePattern, criteria.CaseSensitive))
+                    return false;
+            }
+
+            if (criteria.ClassNames?.Any() == true)
+            {
+                var classMatches = criteria.ClassNames.Any(c => 
+                    MatchesPattern(window.ClassName, c, criteria.CaseSensitive));
+                if (!classMatches) return false;
+            }
+
+            if (criteria.ExcludedClassNames?.Any() == true)
+            {
+                var classExcluded = criteria.ExcludedClassNames.Any(c => 
+                    MatchesPattern(window.ClassName, c, criteria.CaseSensitive));
+                if (classExcluded) return false;
+            }
+
+            return true;
+        }
+
+        private bool CheckPositionCriteria(WindowInfo window, WindowFilterCriteria criteria)
+        {
+            if (criteria.PositionBounds != null)
+            {
+                var bounds = criteria.PositionBounds.Value;
+                var windowCenter = new Point(
+                    window.Rectangle.X + window.Rectangle.Width / 2,
+                    window.Rectangle.Y + window.Rectangle.Height / 2
+                );
+
+                if (!bounds.Contains(windowCenter))
+                    return false;
+            }
+
+            if (criteria.ExcludedPositionBounds?.Any() == true)
+            {
+                var windowCenter = new Point(
+                    window.Rectangle.X + window.Rectangle.Width / 2,
+                    window.Rectangle.Y + window.Rectangle.Height / 2
+                );
+
+                if (criteria.ExcludedPositionBounds.Any(bounds => bounds.Contains(windowCenter)))
+                    return false;
+            }
+
+            return true;
+        }
+
+        private bool CheckTimeCriteria(WindowInfo window, WindowFilterCriteria criteria)
+        {
+            if (criteria.TimeRange != null)
+            {
+                var currentTime = DateTime.Now.TimeOfDay;
+                if (currentTime < criteria.TimeRange.Start || currentTime > criteria.TimeRange.End)
+                    return false;
+            }
+
+            if (criteria.DaysOfWeek?.Any() == true)
+            {
+                if (!criteria.DaysOfWeek.Contains(DateTime.Now.DayOfWeek))
+                    return false;
+            }
+
+            return true;
+        }
+
+        private bool CheckMonitorCriteria(WindowInfo window, WindowFilterCriteria criteria)
+        {
+            if (criteria.MonitorIndices?.Any() == true)
+            {
+                var monitor = window.AssignedMonitor;
+                if (monitor == null) return false;
+
+                var monitorIndex = GetMonitorIndex(monitor);
+                if (!criteria.MonitorIndices.Contains(monitorIndex))
+                    return false;
+            }
+
+            if (criteria.PrimaryMonitorOnly && window.AssignedMonitor?.IsPrimary != true)
+                return false;
+
+            if (criteria.ExcludePrimaryMonitor && window.AssignedMonitor?.IsPrimary == true)
+                return false;
+
+            return true;
+        }
+
+        private bool CheckCustomCriteria(WindowInfo window, WindowFilterCriteria criteria)
+        {
+            if (criteria.CustomFilters?.Any() == true)
+            {
+                foreach (var customFilter in criteria.CustomFilters)
+                {
+                    if (!customFilter.Invoke(window))
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
+        private bool MatchesPattern(string text, string pattern, bool caseSensitive)
+        {
+            if (string.IsNullOrEmpty(pattern)) return true;
+            if (string.IsNullOrEmpty(text)) return false;
+
+            if (pattern.Contains("*") || pattern.Contains("?"))
+            {
+                return MatchesWildcardPattern(text, pattern, caseSensitive);
+            }
+
+            return text.Equals(pattern, caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase);
+        }
+
+        private bool MatchesWildcardPattern(string text, string pattern, bool caseSensitive)
+        {
+            var regexPattern = "^" + Regex.Escape(pattern).Replace("\\*", ".*").Replace("\\?", ".") + "$";
+            var options = caseSensitive ? RegexOptions.None : RegexOptions.IgnoreCase;
+            
+            return GetCachedRegex(regexPattern, options).IsMatch(text);
+        }
+
+        private bool MatchesRegexPattern(string text, string pattern, bool caseSensitive)
+        {
+            if (string.IsNullOrEmpty(pattern)) return true;
+            if (string.IsNullOrEmpty(text)) return false;
+
+            try
+            {
+                var options = caseSensitive ? RegexOptions.None : RegexOptions.IgnoreCase;
+                return GetCachedRegex(pattern, options).IsMatch(text);
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
+        }
+
+        private Regex GetCachedRegex(string pattern, RegexOptions options)
+        {
+            var key = $"{pattern}|{options}";
+            if (!compiledRegexCache.TryGetValue(key, out var regex))
+            {
+                regex = new Regex(pattern, options | RegexOptions.Compiled);
+                compiledRegexCache[key] = regex;
+            }
+            return regex;
+        }
+
+        private int GetMonitorIndex(MonitorInfo monitor)
+        {
+            return monitor.IsPrimary ? 0 : monitor.Handle.ToInt32() % 10;
+        }
+
+        private void UpdateMatchCache(WindowInfo window, WindowFilterCriteria criteria)
+        {
+            var key = $"{window.Handle}|{criteria.GetHashCode()}";
+            lastMatchCache[key] = DateTime.UtcNow;
+        }
+
+        public void ClearCache()
+        {
+            compiledRegexCache.Clear();
+            lastMatchCache.Clear();
+        }
+
+        public FilterStatistics GetStatistics()
+        {
+            return new FilterStatistics
+            {
+                CachedRegexCount = compiledRegexCache.Count,
+                CachedMatchCount = lastMatchCache.Count,
+                LastCacheUpdate = lastMatchCache.Values.DefaultIfEmpty(DateTime.MinValue).Max()
+            };
         }
     }
 
     public class WindowFilterCriteria
     {
         public string? TitlePattern { get; set; }
+        public List<string>? TitleContains { get; set; }
+        public List<string>? TitleStartsWith { get; set; }
+        public List<string>? TitleEndsWith { get; set; }
+        public List<string>? ExcludedTitles { get; set; }
+        
+        public string? ClassNamePattern { get; set; }
+        public List<string>? ClassNames { get; set; }
+        public List<string>? ExcludedClassNames { get; set; }
+        
         public List<string>? ProcessNames { get; set; }
         public List<string>? ExcludedProcesses { get; set; }
-        public List<string>? ExcludedTitles { get; set; }
+        public Range<uint>? ProcessIdRange { get; set; }
+        
         public int? MinWidth { get; set; }
         public int? MinHeight { get; set; }
         public int? MaxWidth { get; set; }
         public int? MaxHeight { get; set; }
+        public int? MinArea { get; set; }
+        public int? MaxArea { get; set; }
+        public Range<double>? AspectRatioRange { get; set; }
+        
         public List<WindowState>? WindowStates { get; set; }
+        public List<WindowState>? ExcludedStates { get; set; }
         public bool IncludeMinimized { get; set; } = false;
+        public bool RequireVisibleTitle { get; set; } = true;
+        
+        public Rectangle? PositionBounds { get; set; }
+        public List<Rectangle>? ExcludedPositionBounds { get; set; }
+        
+        public List<int>? MonitorIndices { get; set; }
+        public bool PrimaryMonitorOnly { get; set; } = false;
+        public bool ExcludePrimaryMonitor { get; set; } = false;
+        
+        public TimeRange? TimeRange { get; set; }
+        public List<DayOfWeek>? DaysOfWeek { get; set; }
+        public TimeSpan? MaxAge { get; set; }
+        
+        public bool CaseSensitive { get; set; } = false;
+        public FilterMode Mode { get; set; } = FilterMode.Include;
+        public int Priority { get; set; } = 0;
+        public bool Enabled { get; set; } = true;
+        
+        public List<Func<WindowInfo, bool>>? CustomFilters { get; set; }
+        public Dictionary<string, object>? CustomProperties { get; set; }
+        
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public DateTime Created { get; set; } = DateTime.UtcNow;
+        public DateTime LastModified { get; set; } = DateTime.UtcNow;
+
+        public WindowFilterCriteria Clone()
+        {
+            return new WindowFilterCriteria
+            {
+                TitlePattern = TitlePattern,
+                TitleContains = TitleContains?.ToList(),
+                TitleStartsWith = TitleStartsWith?.ToList(),
+                TitleEndsWith = TitleEndsWith?.ToList(),
+                ExcludedTitles = ExcludedTitles?.ToList(),
+                ClassNamePattern = ClassNamePattern,
+                ClassNames = ClassNames?.ToList(),
+                ExcludedClassNames = ExcludedClassNames?.ToList(),
+                ProcessNames = ProcessNames?.ToList(),
+                ExcludedProcesses = ExcludedProcesses?.ToList(),
+                ProcessIdRange = ProcessIdRange,
+                MinWidth = MinWidth,
+                MinHeight = MinHeight,
+                MaxWidth = MaxWidth,
+                MaxHeight = MaxHeight,
+                MinArea = MinArea,
+                MaxArea = MaxArea,
+                AspectRatioRange = AspectRatioRange,
+                WindowStates = WindowStates?.ToList(),
+                ExcludedStates = ExcludedStates?.ToList(),
+                IncludeMinimized = IncludeMinimized,
+                RequireVisibleTitle = RequireVisibleTitle,
+                PositionBounds = PositionBounds,
+                ExcludedPositionBounds = ExcludedPositionBounds?.ToList(),
+                MonitorIndices = MonitorIndices?.ToList(),
+                PrimaryMonitorOnly = PrimaryMonitorOnly,
+                ExcludePrimaryMonitor = ExcludePrimaryMonitor,
+                TimeRange = TimeRange,
+                DaysOfWeek = DaysOfWeek?.ToList(),
+                MaxAge = MaxAge,
+                CaseSensitive = CaseSensitive,
+                Mode = Mode,
+                Priority = Priority,
+                Enabled = Enabled,
+                CustomFilters = CustomFilters?.ToList(),
+                CustomProperties = CustomProperties?.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
+                Name = Name,
+                Description = Description,
+                Created = Created,
+                LastModified = DateTime.UtcNow
+            };
+        }
+
+        public override int GetHashCode()
+        {
+            var hash = new HashCode();
+            hash.Add(TitlePattern);
+            hash.Add(ClassNamePattern);
+            hash.Add(ProcessNames?.Count ?? 0);
+            hash.Add(MinWidth);
+            hash.Add(MinHeight);
+            hash.Add(MaxWidth);
+            hash.Add(MaxHeight);
+            hash.Add(WindowStates?.Count ?? 0);
+            hash.Add(IncludeMinimized);
+            hash.Add(CaseSensitive);
+            hash.Add(Mode);
+            hash.Add(Enabled);
+            return hash.ToHashCode();
+        }
+    }
+
+    public struct Range<T> where T : IComparable<T>
+    {
+        public T Min { get; set; }
+        public T Max { get; set; }
+
+        public Range(T min, T max)
+        {
+            Min = min;
+            Max = max;
+        }
+
+        public bool Contains(T value)
+        {
+            return value.CompareTo(Min) >= 0 && value.CompareTo(Max) <= 0;
+        }
+    }
+
+    public struct TimeRange
+    {
+        public TimeSpan Start { get; set; }
+        public TimeSpan End { get; set; }
+
+        public TimeRange(TimeSpan start, TimeSpan end)
+        {
+            Start = start;
+            End = end;
+        }
+
+        public bool Contains(TimeSpan time)
+        {
+            if (Start <= End)
+            {
+                return time >= Start && time <= End;
+            }
+            else
+            {
+                return time >= Start || time <= End;
+            }
+        }
+    }
+
+    public enum FilterMode
+    {
+        Include,
+        Exclude,
+        Highlight,
+        Priority
+    }
+
+    public class FilterStatistics
+    {
+        public int CachedRegexCount { get; set; }
+        public int CachedMatchCount { get; set; }
+        public DateTime LastCacheUpdate { get; set; }
+        public int TotalFiltersApplied { get; set; }
+        public int WindowsMatched { get; set; }
+        public int WindowsExcluded { get; set; }
+        public TimeSpan AverageFilterTime { get; set; }
     }
 }
