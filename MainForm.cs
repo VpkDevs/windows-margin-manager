@@ -18,6 +18,7 @@ namespace WindowsMarginManager
         private AnimationEngine animationEngine;
         private ProfileManager profileManager;
         private SchedulingEngine schedulingEngine;
+        private SmartPositioningEngine smartPositioningEngine;
         private MarginSettings marginSettings;
         private List<WindowInfo> originalWindowStates;
         private bool marginsApplied = false;
