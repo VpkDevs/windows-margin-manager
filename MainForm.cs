@@ -17,6 +17,7 @@ namespace WindowsMarginManager
         private MultiMonitorManager multiMonitorManager;
         private AnimationEngine animationEngine;
         private ProfileManager profileManager;
+        private SchedulingEngine schedulingEngine;
         private MarginSettings marginSettings;
         private List<WindowInfo> originalWindowStates;
         private bool marginsApplied = false;
@@ -50,6 +51,7 @@ namespace WindowsMarginManager
             multiMonitorManager = new MultiMonitorManager();
             animationEngine = new AnimationEngine();
             profileManager = new ProfileManager();
+            schedulingEngine = new SchedulingEngine(windowManager, profileManager, multiMonitorManager);
             hotkeyManager = new HotkeyManager(this);
             originalWindowStates = new List<WindowInfo>();
             currentFilter = new WindowFilterCriteria();
@@ -77,6 +79,7 @@ namespace WindowsMarginManager
             var monitorsMenu = new ToolStripMenuItem("Monitors");
             BuildMonitorsMenu(monitorsMenu);
             
+            var schedulingItem = new ToolStripMenuItem("Task Scheduler...", null, OnScheduling);
             var settingsItem = new ToolStripMenuItem("Settings", null, OnSettings);
             var aboutItem = new ToolStripMenuItem("About", null, OnAbout);
             var exitItem = new ToolStripMenuItem("Exit", null, OnExit);
@@ -92,6 +95,7 @@ namespace WindowsMarginManager
                 profilesMenu,
                 monitorsMenu,
                 new ToolStripSeparator(),
+                schedulingItem,
                 settingsItem,
                 aboutItem,
                 new ToolStripSeparator(),
@@ -536,6 +540,12 @@ namespace WindowsMarginManager
             }
         }
 
+        private void OnScheduling(object? sender, EventArgs e)
+        {
+            var schedulingForm = new SchedulingForm(schedulingEngine, profileManager);
+            schedulingForm.ShowDialog();
+        }
+
         private void OnAbout(object? sender, EventArgs e)
         {
             var aboutForm = new AboutForm();
@@ -546,6 +556,7 @@ namespace WindowsMarginManager
         {
             hotkeyManager.UnregisterHotkeys();
             animationEngine.CancelAllAnimations();
+            schedulingEngine.Dispose();
             multiMonitorManager.Dispose();
             animationEngine.Dispose();
             statusUpdateTimer.Stop();
@@ -558,6 +569,7 @@ namespace WindowsMarginManager
             if (disposing)
             {
                 hotkeyManager?.UnregisterHotkeys();
+                schedulingEngine?.Dispose();
                 animationEngine?.Dispose();
                 multiMonitorManager?.Dispose();
                 statusUpdateTimer?.Dispose();
