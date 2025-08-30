@@ -52,6 +52,7 @@ namespace WindowsMarginManager
             animationEngine = new AnimationEngine();
             profileManager = new ProfileManager();
             schedulingEngine = new SchedulingEngine(windowManager, profileManager, multiMonitorManager);
+            smartPositioningEngine = new SmartPositioningEngine(windowManager, multiMonitorManager);
             hotkeyManager = new HotkeyManager(this);
             originalWindowStates = new List<WindowInfo>();
             currentFilter = new WindowFilterCriteria();
@@ -557,6 +558,7 @@ namespace WindowsMarginManager
             hotkeyManager.UnregisterHotkeys();
             animationEngine.CancelAllAnimations();
             schedulingEngine.Dispose();
+            smartPositioningEngine.Dispose();
             multiMonitorManager.Dispose();
             animationEngine.Dispose();
             statusUpdateTimer.Stop();
@@ -570,6 +572,7 @@ namespace WindowsMarginManager
             {
                 hotkeyManager?.UnregisterHotkeys();
                 schedulingEngine?.Dispose();
+                smartPositioningEngine?.Dispose();
                 animationEngine?.Dispose();
                 multiMonitorManager?.Dispose();
                 statusUpdateTimer?.Dispose();
