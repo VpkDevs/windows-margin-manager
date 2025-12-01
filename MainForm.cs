@@ -22,7 +22,7 @@ namespace WindowsMarginManager
         private MarginSettings marginSettings;
         private List<WindowInfo> originalWindowStates;
         private bool marginsApplied = false;
-        private Timer statusUpdateTimer;
+        private System.Windows.Forms.Timer statusUpdateTimer;
         private WindowFilterCriteria currentFilter;
 
         public MainForm()
@@ -60,7 +60,7 @@ namespace WindowsMarginManager
             
             multiMonitorManager.MonitorConfigurationChanged += OnMonitorConfigurationChanged;
             
-            statusUpdateTimer = new Timer();
+            statusUpdateTimer = new System.Windows.Forms.Timer();
             statusUpdateTimer.Interval = 5000;
             statusUpdateTimer.Tick += UpdateTrayIconStatus;
             statusUpdateTimer.Start();
@@ -164,12 +164,12 @@ namespace WindowsMarginManager
 
         private void RegisterHotkeys()
         {
-            hotkeyManager.RegisterHotkey(Keys.M, HotkeyManager.MOD_CONTROL | HotkeyManager.MOD_ALT, OnToggleMargins);
-            hotkeyManager.RegisterHotkey(Keys.R, HotkeyManager.MOD_CONTROL | HotkeyManager.MOD_ALT, OnRestoreWindows);
-            hotkeyManager.RegisterHotkey(Keys.A, HotkeyManager.MOD_CONTROL | HotkeyManager.MOD_ALT, OnAutoArrange);
-            hotkeyManager.RegisterHotkey(Keys.T, HotkeyManager.MOD_CONTROL | HotkeyManager.MOD_ALT, OnTileWindows);
-            hotkeyManager.RegisterHotkey(Keys.S, HotkeyManager.MOD_CONTROL | HotkeyManager.MOD_ALT, OnSaveCurrentLayout);
-            hotkeyManager.RegisterHotkey(Keys.F, HotkeyManager.MOD_CONTROL | HotkeyManager.MOD_ALT, OnToggleFullscreen);
+            hotkeyManager.RegisterHotkey(Keys.M, HotkeyManager.MOD_CONTROL | HotkeyManager.MOD_ALT, () => OnToggleMargins(null, EventArgs.Empty));
+            hotkeyManager.RegisterHotkey(Keys.R, HotkeyManager.MOD_CONTROL | HotkeyManager.MOD_ALT, () => OnRestoreWindows(null, EventArgs.Empty));
+            hotkeyManager.RegisterHotkey(Keys.A, HotkeyManager.MOD_CONTROL | HotkeyManager.MOD_ALT, () => OnAutoArrange(null, EventArgs.Empty));
+            hotkeyManager.RegisterHotkey(Keys.T, HotkeyManager.MOD_CONTROL | HotkeyManager.MOD_ALT, () => OnTileWindows(null, EventArgs.Empty));
+            hotkeyManager.RegisterHotkey(Keys.S, HotkeyManager.MOD_CONTROL | HotkeyManager.MOD_ALT, () => OnSaveCurrentLayout(null, EventArgs.Empty));
+            hotkeyManager.RegisterHotkey(Keys.F, HotkeyManager.MOD_CONTROL | HotkeyManager.MOD_ALT, () => OnToggleFullscreen(null, EventArgs.Empty));
             
             for (int i = 1; i <= 9; i++)
             {
@@ -179,7 +179,7 @@ namespace WindowsMarginManager
                     () => ApplyProfileByIndex(profileIndex));
             }
             
-            hotkeyManager.RegisterHotkey(Keys.M, HotkeyManager.MOD_WIN | HotkeyManager.MOD_SHIFT, OnDistributeAcrossMonitors);
+            hotkeyManager.RegisterHotkey(Keys.M, HotkeyManager.MOD_WIN | HotkeyManager.MOD_SHIFT, () => OnDistributeAcrossMonitors(null, EventArgs.Empty));
         }
 
         private void OnToggleMargins(object? sender, EventArgs e)

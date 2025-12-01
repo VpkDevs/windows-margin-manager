@@ -1,0 +1,61 @@
+# .NET Build outputs
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+*.userprefs
+*.rsuser
+
+# Visual Studio
+.vs/
+*.sln.docstates
+*.csproj.user
+
+# JetBrains Rider
+.idea/
+
+# NuGet
+*.nupkg
+.nuget/
+packages/
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio cache files
+*.VisualState.xml
+TestResult.xml
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.VisualState.xml
+
+# dotCover
+*.dotCover
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+
+# Publish output
+publish/
+
+# Application data
+*.json.bak
+
+# Test results
+Tests/**/TestResults/

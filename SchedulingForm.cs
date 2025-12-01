@@ -12,7 +12,7 @@ namespace WindowsMarginManager
         
         private ListView taskListView;
         private Button newTaskButton, editTaskButton, deleteTaskButton, enableDisableButton;
-        private Button okButton, cancelButton;
+        private Button okButton;
         private GroupBox taskDetailsGroupBox;
         private Label nameLabel, triggerLabel, actionLabel, statusLabel, lastExecutedLabel;
         private TextBox logTextBox;
