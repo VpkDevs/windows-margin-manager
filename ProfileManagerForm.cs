@@ -11,7 +11,7 @@ namespace WindowsMarginManager
         private ListBox profileListBox;
         private TextBox nameTextBox, descriptionTextBox;
         private Button newButton, editButton, deleteButton, duplicateButton;
-        private Button okButton, cancelButton;
+        private Button okButton;
         private GroupBox detailsGroupBox;
         private Label marginsLabel, filtersLabel, createdLabel, modifiedLabel;
 

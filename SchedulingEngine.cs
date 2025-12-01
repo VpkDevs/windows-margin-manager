@@ -13,7 +13,7 @@ namespace WindowsMarginManager
         private readonly WindowManager windowManager;
         private readonly ProfileManager profileManager;
         private readonly MultiMonitorManager multiMonitorManager;
-        private readonly Timer schedulerTimer;
+        private readonly System.Timers.Timer schedulerTimer;
         private List<ScheduledTask> scheduledTasks;
         private readonly SystemEventMonitor eventMonitor;
         private bool disposed = false;
@@ -36,7 +36,7 @@ namespace WindowsMarginManager
             scheduledTasks = new List<ScheduledTask>();
             eventMonitor = new SystemEventMonitor();
             
-            schedulerTimer = new Timer(60000); // Check every minute
+            schedulerTimer = new System.Timers.Timer(60000); // Check every minute
             schedulerTimer.Elapsed += OnSchedulerTick;
             schedulerTimer.AutoReset = true;
             

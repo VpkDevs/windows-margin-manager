@@ -10,7 +10,7 @@ namespace WindowsMarginManager
     public class AnimationEngine
     {
         private readonly Dictionary<IntPtr, AnimationState> activeAnimations;
-        private readonly Timer animationTimer;
+        private readonly System.Threading.Timer animationTimer;
         private readonly AnimationSettings settings;
         private readonly AnimationStatistics statistics;
         private readonly Queue<AnimationFrame> frameHistory;
@@ -28,7 +28,7 @@ namespace WindowsMarginManager
             settings = customSettings ?? new AnimationSettings();
             statistics = new AnimationStatistics();
             frameHistory = new Queue<AnimationFrame>();
-            animationTimer = new Timer(UpdateAnimations, null, Timeout.Infinite, ANIMATION_INTERVAL);
+            animationTimer = new System.Threading.Timer(UpdateAnimations, null, Timeout.Infinite, ANIMATION_INTERVAL);
         }
 
         public async Task AnimateWindowAsync(IntPtr windowHandle, Rectangle startBounds, Rectangle endBounds, 

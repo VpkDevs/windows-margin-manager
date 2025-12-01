@@ -11,9 +11,8 @@ namespace WindowsMarginManager
         
         private NumericUpDown leftMarginUpDown, topMarginUpDown, rightMarginUpDown, bottomMarginUpDown;
         private CheckBox enabledCheckBox, usePercentageCheckBox;
-        private ComboBox priorityComboBox;
         private Button okButton, cancelButton, testButton;
-        private Label resolutionLabel, dpiLabel, workingAreaLabel;
+        private Label resolutionLabel, dpiLabel;
 
         public MonitorConfigForm(MonitorInfo monitor, MultiMonitorManager multiMonitorManager)
         {

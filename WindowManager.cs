@@ -404,6 +404,14 @@ namespace WindowsMarginManager
     {
         public IntPtr Handle { get; set; }
         public Rectangle Rectangle { get; set; }
+        /// <summary>
+        /// Alias for Rectangle property for better API consistency.
+        /// </summary>
+        public Rectangle Bounds
+        {
+            get => Rectangle;
+            set => Rectangle = value;
+        }
         public bool IsMaximized { get; set; }
         public bool IsMinimized { get; set; }
         public string Title { get; set; } = string.Empty;
@@ -485,10 +493,10 @@ namespace WindowsMarginManager
             if (criteria.MinArea.HasValue && (rect.Width * rect.Height) < criteria.MinArea.Value) return false;
             if (criteria.MaxArea.HasValue && (rect.Width * rect.Height) > criteria.MaxArea.Value) return false;
 
-            if (criteria.AspectRatioRange != null)
+            if (criteria.AspectRatioRange.HasValue)
             {
                 var aspectRatio = (double)rect.Width / rect.Height;
-                if (aspectRatio < criteria.AspectRatioRange.Min || aspectRatio > criteria.AspectRatioRange.Max)
+                if (aspectRatio < criteria.AspectRatioRange.Value.Min || aspectRatio > criteria.AspectRatioRange.Value.Max)
                     return false;
             }
 
@@ -528,9 +536,9 @@ namespace WindowsMarginManager
                 if (processExcluded) return false;
             }
 
-            if (criteria.ProcessIdRange != null)
+            if (criteria.ProcessIdRange.HasValue)
             {
-                if (window.ProcessId < criteria.ProcessIdRange.Min || window.ProcessId > criteria.ProcessIdRange.Max)
+                if (window.ProcessId < criteria.ProcessIdRange.Value.Min || window.ProcessId > criteria.ProcessIdRange.Value.Max)
                     return false;
             }
 
@@ -631,10 +639,10 @@ namespace WindowsMarginManager
 
         private bool CheckTimeCriteria(WindowInfo window, WindowFilterCriteria criteria)
         {
-            if (criteria.TimeRange != null)
+            if (criteria.TimeRange.HasValue)
             {
                 var currentTime = DateTime.Now.TimeOfDay;
-                if (currentTime < criteria.TimeRange.Start || currentTime > criteria.TimeRange.End)
+                if (currentTime < criteria.TimeRange.Value.Start || currentTime > criteria.TimeRange.Value.End)
                     return false;
             }
 

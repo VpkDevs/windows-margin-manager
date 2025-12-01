@@ -122,10 +122,10 @@ namespace WindowsMarginManager
             if (totalWeight == 0)
                 return null;
 
-            var avgX = (int)weightedPlacements.Sum(wp => wp.Placement.Bounds.X * wp.Weight) / totalWeight;
-            var avgY = (int)weightedPlacements.Sum(wp => wp.Placement.Bounds.Y * wp.Weight) / totalWeight;
-            var avgWidth = (int)weightedPlacements.Sum(wp => wp.Placement.Bounds.Width * wp.Weight) / totalWeight;
-            var avgHeight = (int)weightedPlacements.Sum(wp => wp.Placement.Bounds.Height * wp.Weight) / totalWeight;
+            var avgX = (int)(weightedPlacements.Sum(wp => wp.Placement.Bounds.X * wp.Weight) / totalWeight);
+            var avgY = (int)(weightedPlacements.Sum(wp => wp.Placement.Bounds.Y * wp.Weight) / totalWeight);
+            var avgWidth = (int)(weightedPlacements.Sum(wp => wp.Placement.Bounds.Width * wp.Weight) / totalWeight);
+            var avgHeight = (int)(weightedPlacements.Sum(wp => wp.Placement.Bounds.Height * wp.Weight) / totalWeight);
 
             return new Rectangle(avgX, avgY, avgWidth, avgHeight);
         }

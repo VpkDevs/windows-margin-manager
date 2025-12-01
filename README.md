@@ -96,7 +96,7 @@ A sophisticated C# utility that revolutionizes window management with AI-powered
 
 ### Requirements
 - **OS**: Windows 10 (1903+) or Windows 11
-- **Runtime**: .NET 6.0 or later
+- **Runtime**: .NET 8.0 or later (LTS)
 - **Memory**: 50MB RAM (minimal footprint)
 - **Permissions**: Standard user (no admin required)
 
