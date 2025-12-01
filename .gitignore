@@ -56,3 +56,6 @@ publish/
 
 # Application data
 *.json.bak
+
+# Test results
+Tests/**/TestResults/

@@ -190,17 +190,64 @@ namespace WindowsMarginManager
         }
     }
 
+    /// <summary>
+    /// Represents a named profile containing margin settings and window filter criteria.
+    /// </summary>
     public class Profile
     {
+        /// <summary>
+        /// Gets or sets the unique identifier for this profile.
+        /// </summary>
         public string Id { get; set; } = Guid.NewGuid().ToString();
+
+        /// <summary>
+        /// Gets or sets the display name of this profile.
+        /// </summary>
         public string Name { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the margin settings for this profile.
+        /// </summary>
         public MarginSettings MarginSettings { get; set; } = new MarginSettings();
+
+        /// <summary>
+        /// Gets or sets the window filter criteria for this profile.
+        /// </summary>
         public WindowFilterCriteria? WindowFilter { get; set; }
+
+        /// <summary>
+        /// Gets or sets when this profile was created.
+        /// </summary>
         public DateTime Created { get; set; } = DateTime.UtcNow;
+
+        /// <summary>
+        /// Gets or sets when this profile was last modified.
+        /// </summary>
         public DateTime LastModified { get; set; } = DateTime.UtcNow;
+
+        /// <summary>
+        /// Gets or sets the description of this profile.
+        /// </summary>
         public string Description { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets tags for categorizing this profile.
+        /// </summary>
         public List<string> Tags { get; set; } = new List<string>();
+
+        /// <summary>
+        /// Gets or sets whether this is the default profile.
+        /// </summary>
         public bool IsDefault { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets custom properties for extensibility.
+        /// </summary>
         public Dictionary<string, object> CustomProperties { get; set; } = new Dictionary<string, object>();
+
+        /// <summary>
+        /// Returns a string representation of this profile.
+        /// </summary>
+        public override string ToString() => Name;
     }
 }

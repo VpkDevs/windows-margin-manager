@@ -4,25 +4,131 @@ using Newtonsoft.Json;
 
 namespace WindowsMarginManager
 {
+    /// <summary>
+    /// Represents margin settings for window positioning with comprehensive validation.
+    /// </summary>
     public class MarginSettings
     {
-        public int LeftMargin { get; set; } = 50;
-        public int TopMargin { get; set; } = 50;
-        public int RightMargin { get; set; } = 50;
-        public int BottomMargin { get; set; } = 50;
+        private int _leftMargin = 50;
+        private int _topMargin = 50;
+        private int _rightMargin = 50;
+        private int _bottomMargin = 50;
+        private int _animationDuration = 300;
+        private double _customRatio = 1.618;
+        private int _snapThreshold = 20;
+
+        /// <summary>
+        /// Gets or sets the left margin. Must be between 0 and 10000.
+        /// </summary>
+        public int LeftMargin
+        {
+            get => _leftMargin;
+            set => _leftMargin = Math.Clamp(value, 0, 10000);
+        }
+
+        /// <summary>
+        /// Gets or sets the top margin. Must be between 0 and 10000.
+        /// </summary>
+        public int TopMargin
+        {
+            get => _topMargin;
+            set => _topMargin = Math.Clamp(value, 0, 10000);
+        }
+
+        /// <summary>
+        /// Gets or sets the right margin. Must be between 0 and 10000.
+        /// </summary>
+        public int RightMargin
+        {
+            get => _rightMargin;
+            set => _rightMargin = Math.Clamp(value, 0, 10000);
+        }
+
+        /// <summary>
+        /// Gets or sets the bottom margin. Must be between 0 and 10000.
+        /// </summary>
+        public int BottomMargin
+        {
+            get => _bottomMargin;
+            set => _bottomMargin = Math.Clamp(value, 0, 10000);
+        }
+
+        /// <summary>
+        /// Gets or sets whether margins are specified as percentages.
+        /// </summary>
         public bool UsePercentage { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets whether animations are enabled.
+        /// </summary>
         public bool EnableAnimations { get; set; } = true;
-        public int AnimationDuration { get; set; } = 300;
+
+        /// <summary>
+        /// Gets or sets the animation duration in milliseconds. Must be between 0 and 5000.
+        /// </summary>
+        public int AnimationDuration
+        {
+            get => _animationDuration;
+            set => _animationDuration = Math.Clamp(value, 0, 5000);
+        }
+
+        /// <summary>
+        /// Gets or sets the easing type for animations.
+        /// </summary>
         public EasingType AnimationEasing { get; set; } = EasingType.EaseOutCubic;
+
+        /// <summary>
+        /// Gets or sets the margin calculation type.
+        /// </summary>
         public MarginType MarginType { get; set; } = MarginType.Fixed;
+
+        /// <summary>
+        /// Gets or sets whether adaptive margins are enabled.
+        /// </summary>
         public bool AdaptiveMargins { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets whether golden ratio mode is enabled.
+        /// </summary>
         public bool GoldenRatioMode { get; set; } = false;
-        public double CustomRatio { get; set; } = 1.618;
+
+        /// <summary>
+        /// Gets or sets the custom ratio for margin calculations. Must be between 0.1 and 10.
+        /// </summary>
+        public double CustomRatio
+        {
+            get => _customRatio;
+            set => _customRatio = Math.Clamp(value, 0.1, 10.0);
+        }
+
+        /// <summary>
+        /// Gets or sets whether minimum window sizes should be respected.
+        /// </summary>
         public bool RespectMinimumSizes { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets whether aspect ratio should be preserved during resizing.
+        /// </summary>
         public bool PreserveAspectRatio { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets whether collision detection is enabled.
+        /// </summary>
         public bool EnableCollisionDetection { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets whether snap zones are enabled.
+        /// </summary>
         public bool EnableSnapZones { get; set; } = true;
-        public int SnapThreshold { get; set; } = 20;
+
+        /// <summary>
+        /// Gets or sets the snap threshold in pixels. Must be between 0 and 200.
+        /// </summary>
+        public int SnapThreshold
+        {
+            get => _snapThreshold;
+            set => _snapThreshold = Math.Clamp(value, 0, 200);
+        }
 
         private static readonly string SettingsPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -175,26 +281,63 @@ namespace WindowsMarginManager
             }
         }
 
+        /// <summary>
+        /// Sets a uniform margin value for all sides.
+        /// </summary>
+        /// <param name="margin">The margin value to apply to all sides.</param>
         public void SetUniformMargin(int margin)
         {
             LeftMargin = TopMargin = RightMargin = BottomMargin = margin;
         }
 
+        /// <summary>
+        /// Sets horizontal margins (left and right) to the same value.
+        /// </summary>
+        /// <param name="margin">The margin value for left and right sides.</param>
         public void SetHorizontalMargins(int margin)
         {
             LeftMargin = RightMargin = margin;
         }
 
+        /// <summary>
+        /// Sets vertical margins (top and bottom) to the same value.
+        /// </summary>
+        /// <param name="margin">The margin value for top and bottom sides.</param>
         public void SetVerticalMargins(int margin)
         {
             TopMargin = BottomMargin = margin;
         }
 
+        /// <summary>
+        /// Validates the current margin settings.
+        /// </summary>
+        /// <returns>True if all settings are valid; otherwise, false.</returns>
         public bool IsValid()
         {
-            return LeftMargin >= 0 && TopMargin >= 0 && RightMargin >= 0 && BottomMargin >= 0 &&
-                   AnimationDuration >= 0 && AnimationDuration <= 5000 &&
-                   CustomRatio > 0 && SnapThreshold >= 0;
+            // Margins are automatically clamped, so just check logical constraints
+            if (UsePercentage)
+            {
+                // For percentage mode, margins should not exceed 50% on each side
+                var totalHorizontal = LeftMargin + RightMargin;
+                var totalVertical = TopMargin + BottomMargin;
+                if (totalHorizontal >= 100 || totalVertical >= 100)
+                    return false;
+            }
+
+            return AnimationDuration >= 0 && AnimationDuration <= 5000 &&
+                   CustomRatio > 0.1 && CustomRatio <= 10.0 &&
+                   SnapThreshold >= 0 && SnapThreshold <= 200;
+        }
+
+        /// <summary>
+        /// Gets a summary of the current margin settings.
+        /// </summary>
+        /// <returns>A formatted string describing the margin settings.</returns>
+        public override string ToString()
+        {
+            var unit = UsePercentage ? "%" : "px";
+            return $"Margins: L:{LeftMargin}{unit} T:{TopMargin}{unit} R:{RightMargin}{unit} B:{BottomMargin}{unit}, " +
+                   $"Type: {MarginType}, Animations: {(EnableAnimations ? "On" : "Off")}";
         }
     }
 
