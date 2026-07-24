@@ -1,0 +1,23 @@
+# Vincent OS Standard .gitignore
+node_modules/
+dist/
+build/
+.env
+.env.local
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+target/
+.venv/
+env/
+
+# appended by publish script
+.env.*
+!.env.example
+*.log
+out/
+.next/
+.turbo/
+.cache/
+.pytest_cache/
